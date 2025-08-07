@@ -1,8 +1,12 @@
+import asyncio
+
 from alerts_in_ua import AsyncClient as AsyncAlertsClient
+
 
 from api_v1.air_alert.schemas import TerritorialOrganization
 
 import datetime
+import time
 
 
 async def air_alert():
@@ -11,7 +15,38 @@ async def air_alert():
     alerts_client = AsyncAlertsClient(token=air_alert_api_token)
     active_alerts = await alerts_client.get_active_alerts()
     print("ALERT API REQUEST: ", datetime.datetime.now())
-    return active_alerts
+    return {"data": active_alerts, "timestamp": datetime.datetime.now()}
+
+
+active_alerts_cache = {}
+last_update_time = 0
+update_lock = asyncio.Lock()
+
+
+async def get_active_alerts():
+    """
+    Зберігати та оновлючати поточний список активних тривог, кожні 20 секунд
+    :return:
+    """
+    global active_alerts_cache, last_update_time, update_lock
+    current_time = time.time()
+
+    if last_update_time > 0 and (current_time - last_update_time) < 20:
+        return active_alerts_cache
+
+    async with update_lock:
+        if last_update_time > 0 and (current_time - last_update_time) < 20:
+            return active_alerts_cache
+
+        try:
+            new_data = await air_alert()
+        except Exception as e:
+            raise e
+
+        active_alerts_cache = new_data
+        last_update_time = current_time
+
+    return active_alerts_cache
 
 
 async def filter_by_location_type(location_type: TerritorialOrganization):
