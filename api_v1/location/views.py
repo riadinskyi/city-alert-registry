@@ -6,7 +6,7 @@ from pathlib import Path
 from .tool import CityRegistry
 
 BASE_DIR = Path(__file__).parent
-DATA_PATH = BASE_DIR / "city_regestry.json"
+DATA_PATH = BASE_DIR / "city_registry.json"
 
 router = APIRouter(prefix="/codifier", tags=["codifier"])
 cr = CityRegistry(DATA_PATH)

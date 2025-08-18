@@ -310,7 +310,7 @@ async def interactive_search(cr: CityRegistry) -> tuple[list[str], str] | None:
 
 
 async def main():
-    path = os.path.join(os.path.dirname(__file__), "city_regestry.json")
+    path = os.path.join(os.path.dirname(__file__), "city_registry.json")
     cr = CityRegistry(path)
 
     methods = [
