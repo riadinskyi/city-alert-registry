@@ -10,7 +10,7 @@ def custom_openapi(app):
         title="City Alert API",
         version="1.0.0",
         routes=app.routes,
-        description="API для реєстру тривог. Додайте токен через Authorize, використовуючи Bearer або X-API-Token.",
+        description="API для реєстру тривог. Додайте токен через Authorize, використовуючи X-API-Token.\n<i>В майбутньому звʼязка з Єдиною Системою Авторизації</i>",
     )
     components = openapi_schema.get("components", {})
     security_schemes = components.get("securitySchemes", {})
