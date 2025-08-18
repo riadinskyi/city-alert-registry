@@ -27,3 +27,11 @@ class HierarchyOption(BaseModel):
     name: str
     category: str
     code: Optional[str] = None
+
+
+class CodeSearchResult(BaseModel):
+    code: str
+    ua_code: str
+    chain: List[str]
+    category: str
+    category_label: str

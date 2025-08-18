@@ -1,6 +1,7 @@
 import os
 import json
 import asyncio
+import math
 
 
 class CityRegistry:
@@ -146,78 +147,66 @@ class CityRegistry:
         chain: list[str] = []
         cat: str = rec.get("Category", "")
 
+        # Обробка значень NaN для всіх рівнів
+        def safe_value(val) -> str:
+            if val is None or (isinstance(val, float) and math.isnan(val)):
+                return ""
+            return str(int(val)) if isinstance(val, float) and val.is_integer() else str(val)
+
+        f1 = safe_value(rec.get("First_Level"))
+        s2 = safe_value(rec.get("Second_Level"))
+        t3 = safe_value(rec.get("Third_Level"))
+        f4 = safe_value(rec.get("Fourth_Level"))
+
         # region
-        f1 = rec.get("First_Level")
         reg = next(
-            (
-                r
-                for r in self.recs
-                if r.get("Category") in ("O", "K") and r.get("First_Level") == f1
-            ),
+            (r for r in self.recs
+             if r.get("Category") in ("O", "K")
+             and safe_value(r.get("First_Level")) == f1),
             None,
         )
         if reg:
             chain.append(reg["Name"].strip())
-            if reg.get("Category") == "K":
+            if safe_value(reg.get("Category")) == "K":
                 cat = "K"
 
         # district
-        if rec.get("Second_Level"):
-            d2 = rec["Second_Level"]
+        if s2:
             dist = next(
-                (
-                    r
-                    for r in self.recs
-                    if r.get("Category") == "P" and r.get("Second_Level") == d2
-                ),
+                (r for r in self.recs
+                 if safe_value(r.get("Category")) == "P"
+                 and safe_value(r.get("Second_Level")) == s2),
                 None,
             )
             if dist:
                 chain.append(dist["Name"].strip())
 
         # community
-        if rec.get("Third_Level"):
-            d3 = rec["Third_Level"]
+        if t3:
             comm = next(
-                (
-                    r
-                    for r in self.recs
-                    if r.get("Category") == "H" and r.get("Third_Level") == d3
-                ),
+                (r for r in self.recs
+                 if safe_value(r.get("Category")) == "H"
+                 and safe_value(r.get("Third_Level")) == t3),
                 None,
             )
             if comm:
                 chain.append(comm["Name"].strip())
 
         # unit
-        if rec.get("Fourth_Level"):
-            d4 = rec["Fourth_Level"]
+        if f4:
             unit = next(
-                (
-                    r
-                    for r in self.recs
-                    if r.get("Category") in ("C", "M", "X")
-                       and r.get("Fourth_Level") == d4
-                ),
+                (r for r in self.recs
+                 if safe_value(r.get("Category")) in ("C", "M", "X")
+                 and safe_value(r.get("Fourth_Level")) == f4),
                 None,
             )
             if unit:
                 chain.append(unit["Name"].strip())
-                cat = unit["Category"]
+                cat = safe_value(unit.get("Category"))
 
-        if rec.get("Category") == "K":
-            return chain, rec.get("First_Level", ""), "K"
-        if cat == "K":
-            return chain, f1 or "", "K"
-
-        code = (
-                rec.get("Fourth_Level")
-                or rec.get("Third_Level")
-                or rec.get("Second_Level")
-                or rec.get("First_Level")
-        )
-        return chain, code or "", cat
-
+        # Визначення коду
+        code = f4 or t3 or s2 or f1 or ""
+        return chain, code, cat
     async def get_chain(self, rec: dict) -> tuple[list[str], str, str]:
         return await asyncio.to_thread(self._get_chain, rec)
 
@@ -234,6 +223,32 @@ class CityRegistry:
     async def search(self, query: str) -> list[tuple[list[str], str, str]]:
         return await asyncio.to_thread(self._search, query)
 
+
+    def _search_by_code(self, ua_code: str) -> tuple[list[str], str, str] | None:
+        # Нормалізуємо вхідний код
+        input_full = (ua_code or "").strip().upper()
+        input_no_prefix = input_full[2:] if input_full.startswith("UA") else input_full
+
+        # Функція безпечного читання значень
+        def safe_value(val) -> str:
+            if val is None or (isinstance(val, float) and math.isnan(val)):
+                return ""
+            return str(int(val)) if isinstance(val, float) and val.is_integer() else str(val)
+
+        # Пошук по всіх рівнях
+        for record in self.recs:
+            for key in ["First_Level", "Second_Level", "Third_Level", "Fourth_Level"]:
+                raw = safe_value(record.get(key))
+                val_full = (raw or "").strip().upper()
+                val_no_prefix = val_full[2:] if val_full.startswith("UA") else val_full
+                if val_full == input_full or val_no_prefix == input_no_prefix:
+                    return self._get_chain(record)
+
+        return None
+
+    async def search_by_code(self, ua_code: str) -> tuple[list[str], str, str] | None:
+        """Асинхронна версія пошуку за кодом"""
+        return await asyncio.to_thread(self._search_by_code, ua_code)
 
 def choose_typed(
         options: list[tuple[str, str]],
@@ -309,27 +324,4 @@ async def interactive_search(cr: CityRegistry) -> tuple[list[str], str] | None:
                 return chain, code
 
 
-async def main():
-    path = os.path.join(os.path.dirname(__file__), "city_registry.json")
-    cr = CityRegistry(path)
 
-    methods = [
-        "Ієрархічний вибір (регіон → район → громада → пункт)",
-        "Пошук за назвою",
-    ]
-    choice = choose_typed([(m, "") for m in methods], "Оберіть метод вибору", {"": ""})
-
-    if "Ієрархічний" in choice:
-        chain, code = await interactive_manual(cr)
-    else:
-        res = await interactive_search(cr)
-        if not res:
-            return
-        chain, code = res
-
-    print(f"\nВи обрали: {' > '.join(chain)}")
-    print(f"Адміністративний код: {code}")
-
-
-if __name__ == "__main__":
-    asyncio.run(main())
