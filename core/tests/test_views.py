@@ -32,7 +32,7 @@ async def test_get_active_alerts():
 
 
 @pytest.mark.asyncio
-async def test_search_by_name():
+async def test_location_search_by_name():
     async with AsyncClient(
         transport=ASGITransport(app=app), base_url="http://test/api/v1/codifier"
     ) as ac:
@@ -48,7 +48,7 @@ async def test_search_by_name():
 
 
 @pytest.mark.asyncio
-async def test_search_ua_code():
+async def test_location_by_search_ua_code():
     async with AsyncClient(
         transport=ASGITransport(app=app), base_url="http://testapi/api/v1/codifier"
     ) as ac:
@@ -74,3 +74,42 @@ async def test_search_ua_code():
             assert response.status_code == 200
             assert data["chain"][-1] == city_name
             assert data["category"] == city_data["category"]
+
+
+@pytest.mark.asyncio
+async def test_location_hierarchy_search():
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://testapi/api/v1/codifier"
+    ) as ac:
+
+        region = await ac.get("/location", headers={"X-API-TOKEN": TEST_API_TOKEN})
+        assert region.status_code == 200
+        assert len(region.json()) == 27
+
+        district = await ac.get(
+            "/location",
+            headers={"X-API-TOKEN": TEST_API_TOKEN},
+            params={"region": "Одеська"},
+        )
+        assert district.status_code == 200
+        assert len(district.json()) == 7
+
+        community = await ac.get(
+            "/location",
+            headers={"X-API-TOKEN": TEST_API_TOKEN},
+            params={"region": "Одеська", "district": "Одеський"},
+        )
+        assert community.status_code == 200
+        assert len(community.json()) == 21
+
+        city = await ac.get(
+            "/location",
+            headers={"X-API-TOKEN": TEST_API_TOKEN},
+            params={
+                "region": "Одеська",
+                "district": "Одеський",
+                "community": "Одеська",
+            },
+        )
+        assert city.status_code == 200
+        assert len(city.json()) == 1
