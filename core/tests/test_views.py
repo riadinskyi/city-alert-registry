@@ -13,7 +13,7 @@ async def test_get_cached_alerts():
         transport=ASGITransport(app=app), base_url="http://test"
     ) as ac:
         response = await ac.get(
-            "/api/v1/air-alert/cashed-alerts", headers={"X-API-Token": TEST_API_TOKEN}
+            "/api/v1/air-alert/cached-alerts", headers={"X-API-Token": TEST_API_TOKEN}
         )
         data = response.json()
         assert response.status_code == 200

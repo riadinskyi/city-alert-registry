@@ -7,7 +7,7 @@ from api_v1.air_alert.schemas import TerritorialOrganization
 router = APIRouter(prefix="/air-alert", tags=["Air Alert"])
 
 
-@router.get("/cashed-alerts")
+@router.get("/cached-alerts")
 async def return_cached_alerts():
     return await get_active_alerts()
 
@@ -18,7 +18,6 @@ async def get_alerts_filterer(location_type: TerritorialOrganization):
     Групування повітряних тривог за територіальною організацією.
     """
     return await filter_by_location_type(location_type=location_type)
-
 
 
 @router.get("/codifier/")
@@ -46,5 +45,3 @@ async def return_alerts_codifier():
         )
 
     return enriched
-
-

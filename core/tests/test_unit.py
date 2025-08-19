@@ -19,7 +19,7 @@ async def test_cached_air_alert_limit():
         "CACHE LIMIT TEST: ",
         "First attempt: ",
         first_attempt["timestamp"],
-        "Second attempt(cashed data): ",
+        "Second attempt(cached data): ",
         second_attempt["timestamp"],
         "Third attempt(new data):",
         third_attempt["timestamp"],
