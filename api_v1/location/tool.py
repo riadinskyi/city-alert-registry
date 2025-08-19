@@ -1,4 +1,3 @@
-import os
 import json
 import asyncio
 import math
@@ -31,10 +30,10 @@ class CityRegistry:
         return s.strip().lower()
 
     def _list_level_with_cat(
-            self,
-            level: str,
-            parent_key: str = None,
-            parent_code: str = None,
+        self,
+        level: str,
+        parent_key: str = None,
+        parent_code: str = None,
     ) -> list[tuple[str, str]]:
         cats = self.LEVEL_CAT[level]
         items: dict[str, str] = {}
@@ -50,21 +49,21 @@ class CityRegistry:
         return sorted(items.items(), key=lambda nc: nc[0].lower())
 
     async def list_level_with_cat(
-            self,
-            level: str,
-            parent_key: str = None,
-            parent_code: str = None,
+        self,
+        level: str,
+        parent_key: str = None,
+        parent_code: str = None,
     ) -> list[tuple[str, str]]:
         return await asyncio.to_thread(
             self._list_level_with_cat, level, parent_key, parent_code
         )
 
     def _get_code(
-            self,
-            region_name: str,
-            district_name: str = None,
-            community_name: str = None,
-            unit_name: str = None,
+        self,
+        region_name: str,
+        district_name: str = None,
+        community_name: str = None,
+        unit_name: str = None,
     ) -> str | None:
         # 1) region
         reg = next(
@@ -72,7 +71,7 @@ class CityRegistry:
                 r
                 for r in self.recs
                 if r.get("Category") in ("O", "K")
-                   and r.get("Name", "").strip() == region_name
+                and r.get("Name", "").strip() == region_name
             ),
             None,
         )
@@ -89,8 +88,8 @@ class CityRegistry:
                 r
                 for r in self.recs
                 if r.get("Category") == "P"
-                   and r.get("First_Level") == code
-                   and r.get("Name", "").strip() == district_name
+                and r.get("First_Level") == code
+                and r.get("Name", "").strip() == district_name
             ),
             None,
         )
@@ -107,8 +106,8 @@ class CityRegistry:
                 r
                 for r in self.recs
                 if r.get("Category") == "H"
-                   and r.get("Second_Level") == code
-                   and r.get("Name", "").strip() == community_name
+                and r.get("Second_Level") == code
+                and r.get("Name", "").strip() == community_name
             ),
             None,
         )
@@ -125,19 +124,19 @@ class CityRegistry:
                 r
                 for r in self.recs
                 if r.get("Category") in ("C", "M", "X")
-                   and r.get("Third_Level") == code
-                   and r.get("Name", "").strip() == unit_name
+                and r.get("Third_Level") == code
+                and r.get("Name", "").strip() == unit_name
             ),
             None,
         )
         return unit and unit["Fourth_Level"] or None
 
     async def get_code(
-            self,
-            region_name: str,
-            district_name: str = None,
-            community_name: str = None,
-            unit_name: str = None,
+        self,
+        region_name: str,
+        district_name: str = None,
+        community_name: str = None,
+        unit_name: str = None,
     ) -> str | None:
         return await asyncio.to_thread(
             self._get_code, region_name, district_name, community_name, unit_name
@@ -151,7 +150,11 @@ class CityRegistry:
         def safe_value(val) -> str:
             if val is None or (isinstance(val, float) and math.isnan(val)):
                 return ""
-            return str(int(val)) if isinstance(val, float) and val.is_integer() else str(val)
+            return (
+                str(int(val))
+                if isinstance(val, float) and val.is_integer()
+                else str(val)
+            )
 
         f1 = safe_value(rec.get("First_Level"))
         s2 = safe_value(rec.get("Second_Level"))
@@ -160,9 +163,12 @@ class CityRegistry:
 
         # region
         reg = next(
-            (r for r in self.recs
-             if r.get("Category") in ("O", "K")
-             and safe_value(r.get("First_Level")) == f1),
+            (
+                r
+                for r in self.recs
+                if r.get("Category") in ("O", "K")
+                and safe_value(r.get("First_Level")) == f1
+            ),
             None,
         )
         if reg:
@@ -173,9 +179,12 @@ class CityRegistry:
         # district
         if s2:
             dist = next(
-                (r for r in self.recs
-                 if safe_value(r.get("Category")) == "P"
-                 and safe_value(r.get("Second_Level")) == s2),
+                (
+                    r
+                    for r in self.recs
+                    if safe_value(r.get("Category")) == "P"
+                    and safe_value(r.get("Second_Level")) == s2
+                ),
                 None,
             )
             if dist:
@@ -184,9 +193,12 @@ class CityRegistry:
         # community
         if t3:
             comm = next(
-                (r for r in self.recs
-                 if safe_value(r.get("Category")) == "H"
-                 and safe_value(r.get("Third_Level")) == t3),
+                (
+                    r
+                    for r in self.recs
+                    if safe_value(r.get("Category")) == "H"
+                    and safe_value(r.get("Third_Level")) == t3
+                ),
                 None,
             )
             if comm:
@@ -195,9 +207,12 @@ class CityRegistry:
         # unit
         if f4:
             unit = next(
-                (r for r in self.recs
-                 if safe_value(r.get("Category")) in ("C", "M", "X")
-                 and safe_value(r.get("Fourth_Level")) == f4),
+                (
+                    r
+                    for r in self.recs
+                    if safe_value(r.get("Category")) in ("C", "M", "X")
+                    and safe_value(r.get("Fourth_Level")) == f4
+                ),
                 None,
             )
             if unit:
@@ -207,6 +222,7 @@ class CityRegistry:
         # Визначення коду
         code = f4 or t3 or s2 or f1 or ""
         return chain, code, cat
+
     async def get_chain(self, rec: dict) -> tuple[list[str], str, str]:
         return await asyncio.to_thread(self._get_chain, rec)
 
@@ -223,7 +239,6 @@ class CityRegistry:
     async def search(self, query: str) -> list[tuple[list[str], str, str]]:
         return await asyncio.to_thread(self._search, query)
 
-
     def _search_by_code(self, ua_code: str) -> tuple[list[str], str, str] | None:
         # Нормалізуємо вхідний код
         input_full = (ua_code or "").strip().upper()
@@ -233,7 +248,11 @@ class CityRegistry:
         def safe_value(val) -> str:
             if val is None or (isinstance(val, float) and math.isnan(val)):
                 return ""
-            return str(int(val)) if isinstance(val, float) and val.is_integer() else str(val)
+            return (
+                str(int(val))
+                if isinstance(val, float) and val.is_integer()
+                else str(val)
+            )
 
         # Пошук по всіх рівнях
         for record in self.recs:
@@ -250,10 +269,11 @@ class CityRegistry:
         """Асинхронна версія пошуку за кодом"""
         return await asyncio.to_thread(self._search_by_code, ua_code)
 
+
 def choose_typed(
-        options: list[tuple[str, str]],
-        prompt: str,
-        cat_labels: dict[str, str],
+    options: list[tuple[str, str]],
+    prompt: str,
+    cat_labels: dict[str, str],
 ) -> str:
     print(f"\n{prompt}:")
     for i, (name, cat) in enumerate(options, start=1):
@@ -322,6 +342,3 @@ async def interactive_search(cr: CityRegistry) -> tuple[list[str], str] | None:
             if 1 <= idx <= len(matches):
                 chain, code, _ = matches[idx - 1]
                 return chain, code
-
-
-
