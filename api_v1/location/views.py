@@ -1,8 +1,7 @@
 from typing import List, Optional
-from fastapi import APIRouter, HTTPException, Query, Depends
+from fastapi import APIRouter, HTTPException, Query
 from pathlib import Path
 from pydantic import constr
-import logging
 
 from .schemas import Match, HierarchyOption, CodeSearchResult
 from .tool import CityRegistry
@@ -13,9 +12,8 @@ DATA_PATH = BASE_DIR / "city_registry.json"
 router = APIRouter(prefix="/codifier", tags=["codifier"])
 cr = CityRegistry(DATA_PATH)
 
-UA_CODE_PATTERN = r'^(UA)?\d{10,20}$'
+UA_CODE_PATTERN = r"^(UA)?\d{10,20}$"
 UACode = constr(pattern=UA_CODE_PATTERN)
-
 
 
 @router.get("/search/by-name", response_model=List[Match])
@@ -25,6 +23,7 @@ async def search(q: str = Query(..., description="Fragment of name to search")):
     """
     matches = await cr.search(q)
     return [Match(chain=chain, code=code, category=cat) for chain, code, cat in matches]
+
 
 @router.get("/search/by-code/{ua_code}", response_model=CodeSearchResult)
 async def search_with_code(ua_code: UACode):
@@ -37,8 +36,8 @@ async def search_with_code(ua_code: UACode):
                 detail={
                     "error": "Точний збіг не знайдено",
                     "searched_code": ua_code,
-                    "suggestion": "Перевірте правильність коду"
-                }
+                    "suggestion": "Перевірте правильність коду",
+                },
             )
 
         chain, code, cat = result
@@ -50,25 +49,31 @@ async def search_with_code(ua_code: UACode):
                 detail={
                     "error": "Код не знайдено",
                     "searched_code": ua_code,
-                    "suggestion": "Недійсний код у базі даних"
-                }
+                    "suggestion": "Недійсний код у базі даних",
+                },
             )
 
         # Обережно формуємо ua_code, щоб уникнути дублювання префіксу
         normalized_code = (code or "").strip()
-        ua_code_out = normalized_code if normalized_code.upper().startswith("UA") else f"UA{normalized_code}"
+        ua_code_out = (
+            normalized_code
+            if normalized_code.upper().startswith("UA")
+            else f"UA{normalized_code}"
+        )
         return CodeSearchResult(
             code=normalized_code,
             ua_code=ua_code_out,
             chain=chain,
             category=cat,
-            category_label=cr.CATEGORY_LABEL.get(cat, cat)
+            category_label=cr.CATEGORY_LABEL.get(cat, cat),
         )
 
     except HTTPException as he:
         raise he
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Помилка пошуку: {str(e)}")
+
+
 @router.get("/location", response_model=List[HierarchyOption])
 async def get_hierarchy(
     region: Optional[str] = Query(None, description="Region name"),
