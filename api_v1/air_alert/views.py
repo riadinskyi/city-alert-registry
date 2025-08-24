@@ -3,6 +3,7 @@ from fastapi import APIRouter
 from api_v1.air_alert.crud import get_active_alerts, filter_by_location_type
 from api_v1.air_alert.dependencies import _resolve_code_for_alert_obj
 from api_v1.air_alert.schemas import TerritorialOrganization
+from api_v1.location.dependecies import credentials_return
 
 router = APIRouter(prefix="/air-alert", tags=["Air Alert"])
 
@@ -26,6 +27,7 @@ async def return_alerts_codifier():
     Return all active alerts enriched with codifier code of the territory.
     Attempts robust resolution so every active alert has a UA code if possible.
     """
+    credit_location_data = await credentials_return()
     alerts_data = await get_active_alerts()
     all_alerts = alerts_data["data"].alerts
 
@@ -44,4 +46,4 @@ async def return_alerts_codifier():
             }
         )
 
-    return enriched
+    return {"credit_for_location_data": credit_location_data, "data": enriched}
