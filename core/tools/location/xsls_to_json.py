@@ -9,10 +9,20 @@ import re
 BASE_URL = "https://mindev.gov.ua/"
 PAGE_URL = "https://mindev.gov.ua/diialnist/rozvytok-mistsevoho-samovriaduvannia/kodyfikator-administratyvno-terytorialnykh-odynyts-ta-terytorii-terytorialnykh-hromad"
 
+HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+    "Referer": BASE_URL,
+}
+
 
 def get_latest_entry():
-    resp = requests.get(PAGE_URL)
-    resp.raise_for_status()
+    try:
+        resp = requests.get(PAGE_URL, headers=HEADERS)
+        resp.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        print(f"HTTPError: {e}\nResponse content: {resp.text}")
+        raise
     soup = BeautifulSoup(resp.text, "html.parser")
 
     # шукаємо всі <p> з посиланнями на накази
@@ -42,21 +52,21 @@ def get_latest_entry():
                     "xlsx_url": xlsx_url,
                 }
             )
-
     if not entries:
         raise Exception("Не вдалося знайти жодного наказу з XLSX")
-
-    # перший = найновіший
     return entries[0]
 
 
 def parse_xlsx_to_json(entry, save_as="core/tools/location/kodifikator.json"):
-    resp = requests.get(entry["xlsx_url"])
-    resp.raise_for_status()
+    resp = requests.get(entry["xlsx_url"], headers=HEADERS)
+    try:
+        resp.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        print(f"HTTPError: {e}\nResponse content: {resp.text}")
+        raise
 
     excel_data = pd.ExcelFile(BytesIO(resp.content))
     df = pd.read_excel(excel_data, sheet_name="Кодифікатор")
-
     df = df.drop(index=[0, 1, 2])
     df.columns = [
         "level1",
