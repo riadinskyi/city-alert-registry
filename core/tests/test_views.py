@@ -1,10 +1,27 @@
+import os
+
 import pytest
 from httpx import AsyncClient, ASGITransport
+from pathlib import Path
 
+from core.tools.location.xsls_to_json import download_xlsx_and_parse_to_json
 from main import app
 from core.config import correct_token
 
 TEST_API_TOKEN = correct_token
+
+PROJECT_ROOT = Path(__file__).parent.parent
+JSON_PATH = PROJECT_ROOT / "core" / "tools" / "location" / "kodifikator.json"
+
+
+@pytest.fixture(scope="session", autouse=True)
+def ensure_kodifikator_exists():
+    json_path = "core/tools/location/kodifikator.json"
+    if not os.path.exists(json_path):
+        try:
+            download_xlsx_and_parse_to_json()
+        except Exception as e:
+            pytest.skip(f"Could not download kodifikator: {e}")
 
 
 @pytest.mark.asyncio
@@ -44,7 +61,7 @@ async def test_location_search_by_name():
         correct_ua_code = "UA51040250010015619"
         data = response.json()
         assert response.status_code == 200
-        assert data[0]["code"] == correct_ua_code
+        assert data["data"][0]["code"] == correct_ua_code
 
 
 @pytest.mark.asyncio
@@ -70,10 +87,10 @@ async def test_location_by_search_ua_code():
             )
             data = response.json()
             print("data:", data)
-            print("last_chain:", data["chain"][-1])
+            print("last_chain:", data["data"]["chain"][-1])
             assert response.status_code == 200
-            assert data["chain"][-1] == city_name
-            assert data["category"] == city_data["category"]
+            assert data["data"]["chain"][-1] == city_name
+            assert data["data"]["category"] == city_data["category"]
 
 
 @pytest.mark.asyncio
@@ -84,7 +101,7 @@ async def test_location_hierarchy_search():
 
         region = await ac.get("/location", headers={"X-API-TOKEN": TEST_API_TOKEN})
         assert region.status_code == 200
-        assert len(region.json()) == 27
+        assert len(region.json()["data"]) == 27
 
         district = await ac.get(
             "/location",
@@ -92,7 +109,7 @@ async def test_location_hierarchy_search():
             params={"region": "Одеська"},
         )
         assert district.status_code == 200
-        assert len(district.json()) == 7
+        assert len(district.json()["data"]) == 7
 
         community = await ac.get(
             "/location",
@@ -100,7 +117,7 @@ async def test_location_hierarchy_search():
             params={"region": "Одеська", "district": "Одеський"},
         )
         assert community.status_code == 200
-        assert len(community.json()) == 21
+        assert len(community.json()["data"]) == 21
 
         city = await ac.get(
             "/location",
@@ -112,4 +129,4 @@ async def test_location_hierarchy_search():
             },
         )
         assert city.status_code == 200
-        assert len(city.json()) == 1
+        assert len(city.json()["data"]) == 1
