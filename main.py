@@ -15,9 +15,8 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(lifespan=lifespan, version="1.0.0")
 
-# Register authentication middleware
 app.add_middleware(AuthMiddleWare)
 
 app.include_router(api_v1_router)
