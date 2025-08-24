@@ -5,7 +5,7 @@ from api_v1 import router as api_v1_router
 from core.middlewares.auth import AuthMiddleWare
 from core.openapi import custom_openapi
 
-app = FastAPI()
+app = FastAPI(version="0.0.1")
 
 # Register authentication middleware
 app.add_middleware(AuthMiddleWare)
