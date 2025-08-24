@@ -95,3 +95,4 @@ async def download_xlsx_and_parse_to_json():
     print(f"Знайдено наказ: {latest_entry['order_title']}")
     saved_json = parse_xlsx_to_json(latest_entry)
     print(f"✅ JSON збережено у {saved_json}")
+    return {"status": 200, "detail": "Kodifier has been updated"}
