@@ -1,3 +1,4 @@
+import cloudscraper
 import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
@@ -15,13 +16,15 @@ HEADERS = {
     "Referer": BASE_URL,
 }
 
+scraper = cloudscraper.create_scraper()
+
 
 def get_latest_entry():
     try:
-        resp = requests.get(PAGE_URL, headers=HEADERS)
+        resp = scraper.get(PAGE_URL, headers=HEADERS)
         resp.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        print(f"HTTPError: {e}\nResponse content: {resp.text}")
+    except Exception as e:
+        print(f"HTTPError: {e}\nResponse content: {getattr(resp, 'text', '')}")
         raise
     soup = BeautifulSoup(resp.text, "html.parser")
 
@@ -58,11 +61,11 @@ def get_latest_entry():
 
 
 def parse_xlsx_to_json(entry, save_as="core/tools/location/kodifikator.json"):
-    resp = requests.get(entry["xlsx_url"], headers=HEADERS)
+    resp = scraper.get(entry["xlsx_url"], headers=HEADERS)
     try:
         resp.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        print(f"HTTPError: {e}\nResponse content: {resp.text}")
+    except Exception as e:
+        print(f"HTTPError: {e}\nResponse content: {getattr(resp, 'text', '')}")
         raise
 
     excel_data = pd.ExcelFile(BytesIO(resp.content))
