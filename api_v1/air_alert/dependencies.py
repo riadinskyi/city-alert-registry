@@ -1,18 +1,23 @@
 from alerts_in_ua import AsyncClient as AsyncAlertsClient
-
 from pathlib import Path
-
 from api_v1.air_alert.schemas import TerritorialOrganization
-from api_v1.location.tool import CityRegistry
+from core.tools.location.tool import CityRegistry
 from typing import Optional
 import re
-
-
 import datetime
 
-_BASE_DIR = Path(__file__).parent.parent / "location"
-_DATA_PATH = _BASE_DIR / "city_registry.json"
-_cr = CityRegistry(_DATA_PATH)
+_DATA_PATH = (
+    Path(__file__).parents[2] / "core" / "tools" / "location" / "kodifikator.json"
+)
+
+_cr_instance = None
+
+
+def get_city_registry():
+    global _cr_instance
+    if _cr_instance is None:
+        _cr_instance = CityRegistry(str(_DATA_PATH))
+    return _cr_instance
 
 
 def _norm_str(x: Optional[str]) -> Optional[str]:
@@ -46,7 +51,7 @@ def _clean_region_name(name: str) -> str:
     Normalize region (oblast) name: remove suffixes like "область" or "обл.", collapse spaces.
     """
     s = name.strip()
-    s = re.sub(r"\s*(область|обл\.)\s*$", "", s, flags=re.IGNORECASE)
+    s = re.sub(r"\s*(область|обl\.)\s*$", "", s, flags=re.IGNORECASE)
     return re.sub(r"\s+", " ", s).strip()
 
 
@@ -64,6 +69,7 @@ async def _resolve_code_for_alert_obj(alert) -> Optional[str]:
     Resolve UA code for an active alert object.
     Try hierarchical resolution first; if it fails, perform a name search.
     """
+    cr = get_city_registry()
     loc_type = getattr(alert, "location_type", None)
     region_name = _norm_str(getattr(alert, "location_oblast", None))
     district_name = _norm_str(getattr(alert, "location_raion", None))
@@ -99,26 +105,42 @@ async def _resolve_code_for_alert_obj(alert) -> Optional[str]:
     try:
         if loc_type == TerritorialOrganization.OBLAST.value:
             if region_name:
-                code = await _cr.get_code(region_name=region_name)
+                code = await cr.get_code(region_name=region_name)
                 if code:
                     return code
         elif loc_type == TerritorialOrganization.RAION.value:
             if region_name and district_name:
-                code = await _cr.get_code(region_name=region_name, district_name=district_name)
+                code = await cr.get_code(
+                    region_name=region_name, district_name=district_name
+                )
                 if code:
                     return code
         elif loc_type == TerritorialOrganization.HROMADA.value:
             if region_name and district_name and community_name:
-                code = await _cr.get_code(region_name=region_name, district_name=district_name, community_name=community_name)
+                code = await cr.get_code(
+                    region_name=region_name,
+                    district_name=district_name,
+                    community_name=community_name,
+                )
                 if code:
                     return code
         elif loc_type == TerritorialOrganization.CITY.value:
             if region_name and district_name and community_name and unit_name:
-                code = await _cr.get_code(region_name=region_name, district_name=district_name, community_name=community_name, unit_name=unit_name)
+                code = await cr.get_code(
+                    region_name=region_name,
+                    district_name=district_name,
+                    community_name=community_name,
+                    unit_name=unit_name,
+                )
                 if code:
                     return code
         # Fallback: try the deepest available with whatever we have
-        code = await _cr.get_code(region_name=region_name, district_name=district_name, community_name=community_name, unit_name=unit_name)
+        code = await cr.get_code(
+            region_name=region_name,
+            district_name=district_name,
+            community_name=community_name,
+            unit_name=unit_name,
+        )
         if code:
             return code
     except Exception:
@@ -135,7 +157,7 @@ async def _resolve_code_for_alert_obj(alert) -> Optional[str]:
 
     if query:
         try:
-            matches = await _cr.search(query)
+            matches = await cr.search(query)
             for chain, code, cat in matches:
                 if code and code != "nan":
                     return code
