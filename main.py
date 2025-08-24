@@ -15,7 +15,7 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(lifespan=lifespan, version="1.0.0")
+app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(AuthMiddleWare)
 
