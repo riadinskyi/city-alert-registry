@@ -90,12 +90,13 @@ async def search_with_code(
             if normalized_code.upper().startswith("UA")
             else f"UA{normalized_code}"
         )
+        # Ensure code and ua_code are always identical
+        final_code = ua_code_out
         credit_data = await credentials_return()
         return CodeSearchResponse(
             credit=credit_data,
             data=CodeSearchResult(
-                code=normalized_code,
-                ua_code=ua_code_out,
+                code=final_code,
                 chain=chain,
                 category=cat,
                 category_label=cr.CATEGORY_LABEL.get(cat, cat),

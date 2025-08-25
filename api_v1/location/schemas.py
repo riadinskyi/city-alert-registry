@@ -31,7 +31,6 @@ class HierarchyOption(BaseModel):
 
 class CodeSearchResult(BaseModel):
     code: str
-    ua_code: str
     chain: List[str]
     category: str
     category_label: str
