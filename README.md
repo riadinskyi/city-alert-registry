@@ -2,6 +2,7 @@
 
 Сервіс для пошуку територіальних одиниць з державних реєстрів. Інтеграція з повітряними тривогами, щоб повертати адміністративний код локації із загрозою
 
+<a href="https://send.monobank.ua/jar/6dpG1MjjQb" target="_blank"><img src="https://github.com/riadinskyi/city-alert-registry/blob/master/support-with-monobank-git.png?raw=true" alt="Support with Monobank" height="41" width="180"></a>
 
 > [!CAUTION]
 > Доступ до API та використання його вмісту здійснюються **виключно на власний ризик**.  
