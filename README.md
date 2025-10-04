@@ -2,8 +2,8 @@
 
 Сервіс для пошуку територіальних одиниць з державних реєстрів. Інтеграція з повітряними тривогами, щоб повертати адміністративний код локації із загрозою
 
-### 💸 Support projct
-<a href="https://send.monobank.ua/jar/6dpG1MjjQb" target="_blank"><img src="https://github.com/riadinskyi/city-alert-registry/blob/master/support-with-monobank-git.png?raw=true" alt="Support with Monobank" height="41" width="180"></a>
+### 💸 Support project
+<a href="https://send.monobank.ua/jar/6dpG1MjjQb" target="_blank"><img src="https://github.com/riadinskyi/city-alert-registry/blob/master/Support%20by%20mono%20jar-github%20button.png?raw=true" alt="Support with Monobank" height="41" width="180"></a>
 
 ## Important 
 > [!CAUTION]
